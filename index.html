@@ -160,6 +160,7 @@
     <a class="navlink" data-go="gui"><span class="ico">🖥</span>The GUI</a>
     <a class="navlink" data-go="widget"><span class="ico">🦁</span>Widget &amp; unify</a>
     <a class="navlink" data-go="gemini"><span class="ico">☁</span>Gemini &amp; ESO</a>
+    <a class="navlink" data-go="esodata"><span class="ico">💼</span>Your data &amp; functions</a>
     <a class="navlink" data-go="data"><span class="ico">🗃</span>Data &amp; memory</a>
     <a class="navlink" data-go="files"><span class="ico">📄</span>Files built</a>
     <div class="sep"></div>
@@ -325,6 +326,32 @@ const SECTIONS = [
    </div>
    <div class="note">❌ <b>Declined by you:</b> making Gemini a switchable <i>brain inside</i> E. The E drive stays the local model — it just gains the ability to <i>call</i> Gemini.</div>`},
 
+ {id:'esodata', icon:'💼', title:'Your data &amp; ESO functions — the local brain knows YOU', html:`
+   <p>The cloud widget could call ~180 hand-written functions over your real finance &amp; health data. The
+   <b>local brain now has the same power</b> — through ONE tool, <code>eso_function</code>, without bloating
+   its prompt with every name.</p>
+   <p><b>How it works — discover, then run:</b></p>
+   <div class="flow">you: "what's my net worth?"
+   → eso_function(query="net worth")        → returns the FEW relevant functions (not all 180)
+   → eso_function(name="get_total_networth") → runs it in your ESO Python, returns the answer
+   the right data file is injected automatically; the prompt never lists the functions</div>
+   <ul>
+     <li><b>Finance</b> — ~55 functions: balance, net worth, spending, savings rate, income, credit, forecasts…</li>
+     <li><b>Health</b> — ~75 functions: weight, BMI, sleep stages, heart rate, blood pressure, steps, CPAP…</li>
+     <li>Indexed once (AST-parsed) into <code>home/eso_index.json</code> — no glob/grep at chat time.</li>
+     <li>Opening apps / controlling the PC does NOT go through here — the brain uses <code>open_windows_app</code> /
+       <code>run_shell</code> (more direct). eso_function is purely the quick, accurate <i>data</i> path.</li>
+   </ul>
+   <p><b>Pre-scraped data it also knows</b> (so it doesn't waste time web-browsing):</p>
+   <ul>
+     <li><span class="pill">headlines.csv</span> — latest headlines from several sources, refreshed hourly.</li>
+     <li><span class="pill">trends.csv</span> — what's trending by country, refreshed ~half-hourly.</li>
+   </ul>
+   <div class="note">🔒 <b>Protected:</b> the whole <code>Echo Sphere One</code> system is READ-ONLY to Spheria.
+   It may read anything there, but <code>delete_path</code> / <code>run_shell</code> / <code>python_exec</code>
+   will <b>refuse</b> to delete or destructively modify anything inside it — <i>even if told to</i>. The
+   3-year system is safe by design.</div>`},
+
  {id:'data', icon:'🗃', title:'Data, memory & where things are saved', html:`
    <div class="kv"><b>Config</b><span><code>spheria.config.json</code> — the brain pointer + all settings + <code>integrations</code> (email, cloud, music, Gemini, ESO paths…).</span></div>
    <div class="kv"><b>Sessions</b><span><code>home/sessions/*.json</code> — every conversation from every door, resume-able.</span></div>
@@ -351,14 +378,23 @@ const SECTIONS = [
      <span class="pill path">tools/browser.py</span><span class="pill path">gui/index.html</span><span class="pill path">install/setup.ps1</span>
      <span class="pill path">electron/main.js</span><span class="pill path">widget_spheria_v2.py (C:)</span>
    </p>
+   <p style="margin-top:14px"><b>Then, the latest round:</b></p>
+   <p>
+     <span class="pill path">tools/eso.py</span><span class="pill path">quickbox.py</span><span class="pill path">assets/set_icon.py</span>
+   </p>
    <p><b>What changed, in plain words:</b></p>
    <ul>
-     <li>Added the <b>destructive-action gate</b> + GUI/Telegram/widget approval + <b>STOP</b>.</li>
+     <li>Added the <b>destructive-action gate</b> + GUI/Telegram/widget approval + <b>STOP</b> button (and Esc).</li>
      <li>Added <b>email, RSS, OneDrive, Google Drive, Notion, generic API, music, ask_gemini, eso_agent</b> tools.</li>
      <li>Fixed the brain (tool-capable model), <b>uncensored via prompt</b>, fixed pyexec/pip, flail guards.</li>
      <li>Made <code>open_windows_app</code> launch <b>any installed app</b> (incl. Store apps like Claude/Codex).</li>
-     <li>The <b>folder right-click</b> quick-action (glass box at cursor → console → continue).</li>
-     <li>The <b>/api/events</b> firehose + widget unification (toggle, status dot, logo, narration, STOP).</li>
+     <li>The <b>folder right-click</b> quick-action — now a <b>PyQt6 glass box</b> at the cursor (matches the widget, with a dark right-click menu) → console → continue.</li>
+     <li><b>eso_function</b> — the local brain can now answer your <b>finance &amp; health</b> questions from your real data (discover → run).</li>
+     <li><b>Protected paths</b> — Echo Sphere One is read-only; deletes there are refused even with approval.</li>
+     <li><b>Pre-scraped data</b> awareness (headlines / trends) so it doesn't web-browse for news.</li>
+     <li>Tray <b>"Shut down Spheria"</b> = graceful quit (keeps the widget + autostart); panic is GUI-only.</li>
+     <li>One-step <b>icon swap</b> (<code>set_icon.py</code>) — new logo everywhere.</li>
+     <li>The <b>/api/events</b> firehose + widget unification (cloud/local toggle, status dot, logo, narration, STOP).</li>
    </ul>`},
 ];
 
@@ -399,6 +435,8 @@ const TOOLGROUPS = [
  {name:'Bridges (the cloud sibling)', icon:'🔗', tools:[
    ['ask_gemini','ask Gemini one hard question · the only tool that leaves the PC','cloud'],
    ['eso_agent','run an ESO agent (intel/schedule/health)','cloud']]},
+ {name:'Your data (ESO functions)', icon:'💼', tools:[
+   ['eso_function','your real finance & health data — discover with query=…, run by name (net worth, balance, weight, sleep, heart rate…). data_path injected; ~130 functions']]},
  {name:'Media', icon:'🎵', tools:[
    ['play_music','play from your ~11k-track library by artist/album/song']]},
  {name:'Memory, plan, skills, notify', icon:'🧩', tools:[
