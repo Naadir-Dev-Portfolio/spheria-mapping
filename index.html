@@ -163,6 +163,7 @@
     <a class="navlink" data-go="esodata"><span class="ico">💼</span>Your data &amp; functions</a>
     <a class="navlink" data-go="data"><span class="ico">🗃</span>Data &amp; memory</a>
     <a class="navlink" data-go="files"><span class="ico">📄</span>Files built</a>
+    <a class="navlink" data-go="test"><span class="ico">🧪</span>Try it / test it</a>
     <div class="sep"></div>
     <button class="promptbtn" onclick="openDrawer()">📜 Show the prompts →</button>
   </nav>
@@ -283,6 +284,15 @@ const SECTIONS = [
      <li><b>Auto-pairs</b> the first chat that messages it, then ignores all others (that chat id is the password).</li>
      <li><b>Gated actions:</b> when the brain wants to do something destructive, the bridge asks you in chat; a bare <b>"yes"/"no"</b> reply arms or denies it — the model can't self-approve.</li>
      <li><b>Commands:</b> <code>/new</code> (fresh chat), <code>/status</code>, <code>/model &lt;name&gt;</code>, <code>/screenshot</code> (captures the PC, sends the photo).</li>
+   </ul>
+   <p style="margin-top:12px"><b>It's TWO-WAY — Spheria pings YOU too:</b></p>
+   <div class="flow">inbound : your phone → Telegram → getUpdates long-poll → bridge → agent.chat() → reply
+outbound: Spheria → POST sendMessage(bot token + your chat id) → your phone</div>
+   <ul>
+     <li><code>notify_telegram</code> tool — the brain sends you text or a photo whenever it wants to.</li>
+     <li><b>Routines</b> deliver their result to your phone when they finish (if "telegram" is ticked).</li>
+     <li>Any script can ping you: read the bot token + chat id from <code>spheria.config.json</code> and POST
+       to <code>api.telegram.org/bot&lt;token&gt;/sendMessage</code>. <i>That's exactly how this update pinged you.</i></li>
    </ul>`},
 
  {id:'gui', icon:'🖥', title:'The GUI — the control center', html:`
@@ -331,13 +341,13 @@ const SECTIONS = [
    <b>local brain now has the same power</b> — through ONE tool, <code>eso_function</code>, without bloating
    its prompt with every name.</p>
    <p><b>How it works — discover, then run:</b></p>
-   <div class="flow">you: "what's my net worth?"
-   → eso_function(query="net worth")        → returns the FEW relevant functions (not all 180)
-   → eso_function(name="get_total_networth") → runs it in your ESO Python, returns the answer
+   <div class="flow">you ask a question about your own data
+   → eso_function(query="…")    → returns the FEW relevant functions (not all 180)
+   → eso_function(name="…")     → runs it in the data Python, returns the answer
    the right data file is injected automatically; the prompt never lists the functions</div>
    <ul>
-     <li><b>Finance</b> — ~55 functions: balance, net worth, spending, savings rate, income, credit, forecasts…</li>
-     <li><b>Health</b> — ~75 functions: weight, BMI, sleep stages, heart rate, blood pressure, steps, CPAP…</li>
+     <li><b>Finance</b> — dozens of functions over a private CSV (balances, spending, savings, trends).</li>
+     <li><b>Health</b> — dozens of functions over a private CSV (weight, sleep, activity, vitals).</li>
      <li>Indexed once (AST-parsed) into <code>home/eso_index.json</code> — no glob/grep at chat time.</li>
      <li>Opening apps / controlling the PC does NOT go through here — the brain uses <code>open_windows_app</code> /
        <code>run_shell</code> (more direct). eso_function is purely the quick, accurate <i>data</i> path.</li>
@@ -347,10 +357,10 @@ const SECTIONS = [
      <li><span class="pill">headlines.csv</span> — latest headlines from several sources, refreshed hourly.</li>
      <li><span class="pill">trends.csv</span> — what's trending by country, refreshed ~half-hourly.</li>
    </ul>
-   <div class="note">🔒 <b>Protected:</b> the whole <code>Echo Sphere One</code> system is READ-ONLY to Spheria.
-   It may read anything there, but <code>delete_path</code> / <code>run_shell</code> / <code>python_exec</code>
-   will <b>refuse</b> to delete or destructively modify anything inside it — <i>even if told to</i>. The
-   3-year system is safe by design.</div>`},
+   <div class="note">🔒 <b>Protected:</b> the owner's wider personal data suite is READ-ONLY to Spheria.
+   It may read there, but <code>delete_path</code> / <code>run_shell</code> / <code>python_exec</code>
+   will <b>refuse</b> to delete or destructively modify anything inside it — <i>even if told to</i>.
+   Safe by design.</div>`},
 
  {id:'data', icon:'🗃', title:'Data, memory & where things are saved', html:`
    <div class="kv"><b>Config</b><span><code>spheria.config.json</code> — the brain pointer + all settings + <code>integrations</code> (email, cloud, music, Gemini, ESO paths…).</span></div>
@@ -389,13 +399,28 @@ const SECTIONS = [
      <li>Fixed the brain (tool-capable model), <b>uncensored via prompt</b>, fixed pyexec/pip, flail guards.</li>
      <li>Made <code>open_windows_app</code> launch <b>any installed app</b> (incl. Store apps like Claude/Codex).</li>
      <li>The <b>folder right-click</b> quick-action — now a <b>PyQt6 glass box</b> at the cursor (matches the widget, with a dark right-click menu) → console → continue.</li>
-     <li><b>eso_function</b> — the local brain can now answer your <b>finance &amp; health</b> questions from your real data (discover → run).</li>
-     <li><b>Protected paths</b> — Echo Sphere One is read-only; deletes there are refused even with approval.</li>
+     <li><b>eso_function</b> — the local brain can now answer the owner's <b>finance &amp; health</b> questions from their private data (discover → run).</li>
+     <li><b>Protected paths</b> — the owner's wider system is read-only; deletes there are refused even with approval.</li>
      <li><b>Pre-scraped data</b> awareness (headlines / trends) so it doesn't web-browse for news.</li>
      <li>Tray <b>"Shut down Spheria"</b> = graceful quit (keeps the widget + autostart); panic is GUI-only.</li>
      <li>One-step <b>icon swap</b> (<code>set_icon.py</code>) — new logo everywhere.</li>
      <li>The <b>/api/events</b> firehose + widget unification (cloud/local toggle, status dot, logo, narration, STOP).</li>
    </ul>`},
+
+ {id:'test', icon:'🧪', title:'Try it / test it — and where the bugs will hide', html:`
+   <p>This is <b>ambiguous (probabilistic) computing</b>, not deterministic — you find the edges by USING it.
+   A checklist to exercise every capability and surface what's flaky:</p>
+   <div class="kv"><b>Files / folders</b><span>Right-click a folder → "make 5 numbered text files" · "rename these 1.png, 2.png" · "summarise what's in here".</span></div>
+   <div class="kv"><b>Your data</b><span>"what's my balance this month?" · "how did I sleep last week?" — should come back fast via eso_function, no web.</span></div>
+   <div class="kv"><b>Apps</b><span>"open spotify" · "open claude" — should launch instantly (open_windows_app), not go hunting.</span></div>
+   <div class="kv"><b>News</b><span>"what's trending?" · "top headlines" — should read the pre-scraped CSVs, not browse.</span></div>
+   <div class="kv"><b>Web</b><span>"go to reddit and find me 3 things I'd like" — watch it open, scrape, curate.</span></div>
+   <div class="kv"><b>Email</b><span>"draft &amp; send an email to … about …" — it should GATE (ask before sending).</span></div>
+   <div class="kv"><b>Music</b><span>"play some akon" — finds + queues from your library.</span></div>
+   <div class="kv"><b>Phone</b><span>Message the bot; ask it to screenshot the PC and send it back.</span></div>
+   <div class="kv"><b>Safety</b><span>"delete everything here" → must ASK first. A delete in the protected area → must REFUSE. Hit STOP mid-task → must halt.</span></div>
+   <div class="kv"><b>Both brains</b><span>Toggle ☁/🦁 in the widget; ask the same hard question to each.</span></div>
+   <div class="note">⚠️ <b>Likely soft spots</b> (watch here first): real browser control on JS-heavy sites; the 30B model's speed on long tasks; tool-call accuracy on vague requests; gated-action retries after approval. Note anything weird — that's the trial-by-elimination loop.</div>`},
 ];
 
 const TOOLGROUPS = [
@@ -436,7 +461,7 @@ const TOOLGROUPS = [
    ['ask_gemini','ask Gemini one hard question · the only tool that leaves the PC','cloud'],
    ['eso_agent','run an ESO agent (intel/schedule/health)','cloud']]},
  {name:'Your data (ESO functions)', icon:'💼', tools:[
-   ['eso_function','your real finance & health data — discover with query=…, run by name (net worth, balance, weight, sleep, heart rate…). data_path injected; ~130 functions']]},
+   ['eso_function','the private finance & health data — discover with query=…, run by name. data_path injected; ~130 functions']]},
  {name:'Media', icon:'🎵', tools:[
    ['play_music','play from your ~11k-track library by artist/album/song']]},
  {name:'Memory, plan, skills, notify', icon:'🧩', tools:[
