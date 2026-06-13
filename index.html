@@ -14,9 +14,10 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:radial-gradient(1200px 700px at 70% -10%,#16131c 0%,var(--bg) 55%);color:var(--txt);
-    font-family:'Segoe UI',system-ui,sans-serif;font-size:14.5px;line-height:1.55}
+    font-family:'Segoe UI',system-ui,sans-serif;font-size:14.5px;line-height:1.55;overflow-x:hidden}
   a{color:var(--ember)}
-  code,.mono{font-family:var(--mono);font-size:12.5px}
+  img{max-width:100%}
+  code,.mono{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
   .wrap{display:flex;min-height:100vh}
 
   /* ---------- left nav ---------- */
@@ -38,7 +39,7 @@
   .promptbtn:hover{background:rgba(245,158,11,.16)}
 
   /* ---------- main ---------- */
-  main{flex:1;min-width:0;padding:30px 38px 90px;max-width:1180px}
+  main{flex:1;min-width:0;width:100%;padding:30px 38px 90px;max-width:1180px}
   h1{font-size:26px;margin:0 0 4px;letter-spacing:.3px}
   .sub{color:var(--dim);margin:0 0 22px;font-size:14px}
   h2.sec{font-size:18px;margin:34px 0 12px;display:flex;align-items:center;gap:10px;scroll-margin-top:20px}
@@ -69,7 +70,7 @@
   .card .body ul{margin:10px 0;padding-left:20px}
   .card .body li{margin:5px 0}
   .pill{display:inline-block;font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;
-    border:1px solid var(--line2);color:var(--dim);margin:2px 4px 2px 0;background:rgba(255,255,255,.02)}
+    border:1px solid var(--line2);color:var(--dim);margin:2px 4px 2px 0;background:rgba(255,255,255,.02);overflow-wrap:anywhere}
   .pill.path{color:var(--cyan);border-color:rgba(56,189,248,.3)}
   .pill.gate{color:var(--flame);border-color:rgba(239,68,68,.4)}
   .pill.cloud{color:var(--ember2);border-color:rgba(245,158,11,.4)}
@@ -77,7 +78,31 @@
   .flow{font-family:var(--mono);font-size:12px;color:var(--dim);background:#0a0a0d;border:1px solid var(--line);
     border-radius:9px;padding:11px 13px;margin:10px 0;white-space:pre-wrap;line-height:1.7}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media(max-width:820px){.grid2{grid-template-columns:1fr}nav{display:none}main{padding:20px}}
+  @media(max-width:820px){
+    .wrap{display:block}
+    nav{position:sticky;top:0;z-index:30;height:auto;width:100%;display:flex;align-items:center;gap:4px;
+      border-right:0;border-bottom:1px solid var(--line);padding:10px;overflow-x:auto;scrollbar-width:none}
+    nav::-webkit-scrollbar{display:none}
+    .brand{flex:0 0 auto;padding:4px 10px 4px 4px}
+    .brand span{display:none}
+    nav a.navlink{flex:0 0 auto;white-space:nowrap;padding:8px 10px}
+    nav .sep{display:none}
+    .promptbtn{flex:0 0 auto;width:auto;margin:0;padding:8px 11px;white-space:nowrap}
+    main{max-width:none;padding:18px 14px 56px}
+    h1{font-size:clamp(21px,7vw,26px);line-height:1.2}
+    h2.sec{font-size:16px;align-items:flex-start;gap:8px}
+    .sub{font-size:13px}
+    .diagram{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .diagram svg{min-width:720px}
+    .legend{gap:8px;padding:6px 4px 12px}
+    .card>summary{padding:13px 14px}
+    .card .body{padding:2px 14px 16px}
+    .grid2{grid-template-columns:1fr}
+    .kv,.tool{display:block}
+    .kv b,.tool .tn{display:block;flex:auto;margin-bottom:3px}
+    .drawer{width:100vw}
+    .drawer header,.drawer .scroll{padding-left:16px;padding-right:16px}
+  }
   .kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
   .kv b{flex:0 0 150px;color:var(--ember2);font-weight:600;font-size:13px}
   .kv span{color:#cfcfd8;font-size:13px}
@@ -151,7 +176,7 @@
     <div class="card" open><div class="body">
       <p><b>Spheria is two things that now act as one:</b></p>
       <ul>
-        <li><b>Local Spheria</b> — lives on <code>E:\Spheria</code>. Its brain is a <b>local model</b> (Ollama, currently <code>qwen3-coder:30b</code>) running on your own GPU. No cloud. It has ~43 real tools (files, shell, Python, browser, email, cloud drives, music…). It runs a small web server on <code>127.0.0.1:8470</code> that everything talks to.</li>
+        <li><b>Local Spheria</b> — lives on <code>E:\Spheria</code>. Its brain is a <b>local model</b> (Ollama, currently <code>qwen3-coder:30b</code>) running on your own GPU. No cloud. It has ~43 real tools (files, shell, Python, browser, email, cloud drives, music…). It runs a small web server on <code>XXX.XXX.XXX.XXX:8470</code> that everything talks to.</li>
         <li><b>The Python widget (ESO / "Spheria 2.0")</b> — the floating desktop HUD on <code>C:\…\SPHERIA 2.0</code>. Its brain is <b>Gemini</b> (cloud). It oversees your ESO agents (intel brief, food, schedule, health). It is now <b>also a door</b> to the local brain via a ☁/🦁 toggle.</li>
       </ul>
       <p>So you have <span class="pill brain">a local brain (private, free, offline)</span> and <span class="pill cloud">a cloud brain (Gemini, smarter for big reasoning)</span>, and they can each borrow the other's hands. The local brain can phone Gemini (<code>ask_gemini</code>) and run ESO agents (<code>eso_agent</code>); the widget can route your typing to either brain.</p>
@@ -200,7 +225,7 @@ const SECTIONS = [
    <p style="margin-top:14px">Each door builds an <b>Agent</b> with a <b>Policy</b> (who can approve actions) and a <b>working directory</b>, then calls <code>agent.chat(message)</code>.</p>`},
 
  {id:'server', icon:'🛰', title:'The Control Center server — :8470', html:`
-   <p>A small <b>FastAPI</b> app (<code>src/spheria/server.py</code>) bound to <code>127.0.0.1:8470</code> — loopback only, never exposed to the network. It is the hub every door talks to, and it serves the GUI.</p>
+   <p>A small <b>FastAPI</b> app (<code>src/spheria/server.py</code>) bound to <code>XXX.XXX.XXX.XXX:8470</code> — loopback only, never exposed to the network. It is the hub every door talks to, and it serves the GUI.</p>
    <p><b>When it starts</b> (its "lifespan"), it launches two daemon threads: the <span class="pill">Telegram bridge</span> and the <span class="pill">routine scheduler</span>. It starts Ollama on first need.</p>
    <p><b>Key endpoints:</b></p>
    <ul>
@@ -480,7 +505,7 @@ function renderDiagram(){
    ${doorsSvg}${lines}
    <!-- server -->
    <g class="node" onclick="goSection('server')"><rect x="320" y="150" width="360" height="56" rx="13" fill="#1a1407" stroke="#f59e0b" stroke-width="1.6"/>
-     <text x="500" y="174" text-anchor="middle" class="nlabel" fill="#fbbf24">Control Center Server · 127.0.0.1:8470</text>
+     <text x="500" y="174" text-anchor="middle" class="nlabel" fill="#fbbf24">Control Center Server · XXX.XXX.XXX.XXX:8470</text>
      <text x="500" y="192" text-anchor="middle" class="nsub">FastAPI · SSE chat · /api/confirm · /api/events · serves GUI</text></g>
    <path d="M 500 206 L 500 244" stroke="#5a4a2a" stroke-width="1.6" marker-end="url(#ar)"/>
    <!-- agent loop -->
