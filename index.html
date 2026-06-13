@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spheria — System Map</title>
+<style>
+  :root{
+    --bg:#070708; --bg2:#0b0b0e; --card:#101015; --card2:#15151c; --line:rgba(255,255,255,.08);
+    --line2:rgba(255,255,255,.14); --txt:#e9e9f0; --dim:#9a9aa6; --dimmer:#6a6a78;
+    --ember:#f59e0b; --ember2:#fbbf24; --flame:#ef4444; --green:#34d399; --cyan:#38bdf8;
+    --mono:'Cascadia Code','Consolas',monospace;
+    --door:#38bdf8; --server:#f59e0b; --agent:#a78bfa00; --brain:#34d399; --tool:#e9e9f0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:radial-gradient(1200px 700px at 70% -10%,#16131c 0%,var(--bg) 55%);color:var(--txt);
+    font-family:'Segoe UI',system-ui,sans-serif;font-size:14.5px;line-height:1.55}
+  a{color:var(--ember)}
+  code,.mono{font-family:var(--mono);font-size:12.5px}
+  .wrap{display:flex;min-height:100vh}
+
+  /* ---------- left nav ---------- */
+  nav{position:sticky;top:0;align-self:flex-start;height:100vh;width:212px;flex:0 0 212px;
+    border-right:1px solid var(--line);background:rgba(8,8,11,.7);backdrop-filter:blur(8px);
+    padding:18px 12px;overflow-y:auto}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 16px}
+  .brand img{width:34px;height:34px;border-radius:8px}
+  .brand b{font-size:15px;letter-spacing:.5px}
+  .brand span{display:block;font-size:10.5px;color:var(--dimmer);letter-spacing:2px;text-transform:uppercase}
+  nav a.navlink{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;color:var(--dim);
+    text-decoration:none;font-size:13px;cursor:pointer;transition:.12s}
+  nav a.navlink:hover{background:rgba(255,255,255,.04);color:var(--txt)}
+  nav a.navlink.on{background:rgba(245,158,11,.1);color:var(--ember2);border:1px solid rgba(245,158,11,.25)}
+  nav .ico{width:18px;text-align:center;opacity:.9}
+  nav .sep{height:1px;background:var(--line);margin:12px 6px}
+  .promptbtn{margin-top:8px;width:100%;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.08);
+    color:var(--ember2);border-radius:9px;padding:9px;font-size:12.5px;cursor:pointer}
+  .promptbtn:hover{background:rgba(245,158,11,.16)}
+
+  /* ---------- main ---------- */
+  main{flex:1;min-width:0;padding:30px 38px 90px;max-width:1180px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:.3px}
+  .sub{color:var(--dim);margin:0 0 22px;font-size:14px}
+  h2.sec{font-size:18px;margin:34px 0 12px;display:flex;align-items:center;gap:10px;scroll-margin-top:20px}
+  h2.sec .tag{font-size:11px;color:var(--dimmer);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-family:var(--mono)}
+
+  /* ---------- diagram ---------- */
+  .diagram{background:linear-gradient(180deg,#0c0c11,#090a0d);border:1px solid var(--line);border-radius:16px;
+    padding:8px;margin:6px 0 8px;overflow:hidden}
+  .diagram svg{width:100%;height:auto;display:block}
+  .nlabel{font:600 13px 'Segoe UI';fill:var(--txt)}
+  .nsub{font:11px var(--mono);fill:var(--dim)}
+  .node{cursor:pointer}
+  .node rect{transition:.15s}
+  .node:hover rect{filter:brightness(1.25)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--dim);padding:6px 12px 12px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+
+  /* ---------- cards / accordion ---------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;margin:10px 0;overflow:hidden}
+  .card>summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;align-items:center;gap:11px;
+    font-size:15px;font-weight:600;user-select:none}
+  .card>summary::-webkit-details-marker{display:none}
+  .card>summary .chev{margin-left:auto;color:var(--dimmer);transition:.2s}
+  .card[open]>summary .chev{transform:rotate(90deg)}
+  .card>summary .em{color:var(--ember2)}
+  .card .body{padding:2px 20px 18px;border-top:1px solid var(--line);color:#d3d3dc}
+  .card .body p{margin:12px 0}
+  .card .body ul{margin:10px 0;padding-left:20px}
+  .card .body li{margin:5px 0}
+  .pill{display:inline-block;font-size:11px;font-family:var(--mono);padding:2px 8px;border-radius:20px;
+    border:1px solid var(--line2);color:var(--dim);margin:2px 4px 2px 0;background:rgba(255,255,255,.02)}
+  .pill.path{color:var(--cyan);border-color:rgba(56,189,248,.3)}
+  .pill.gate{color:var(--flame);border-color:rgba(239,68,68,.4)}
+  .pill.cloud{color:var(--ember2);border-color:rgba(245,158,11,.4)}
+  .pill.ok{color:var(--green);border-color:rgba(52,211,153,.35)}
+  .flow{font-family:var(--mono);font-size:12px;color:var(--dim);background:#0a0a0d;border:1px solid var(--line);
+    border-radius:9px;padding:11px 13px;margin:10px 0;white-space:pre-wrap;line-height:1.7}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr}nav{display:none}main{padding:20px}}
+  .kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .kv b{flex:0 0 150px;color:var(--ember2);font-weight:600;font-size:13px}
+  .kv span{color:#cfcfd8;font-size:13px}
+
+  /* tool groups */
+  .tg{border:1px solid var(--line);border-radius:11px;margin:9px 0;background:var(--card)}
+  .tg>summary{list-style:none;cursor:pointer;padding:11px 15px;font-weight:600;display:flex;gap:9px;align-items:center}
+  .tg>summary::-webkit-details-marker{display:none}
+  .tg .chev{margin-left:auto;color:var(--dimmer)}
+  .tg[open] .chev{transform:rotate(90deg)}
+  .tg .tools{padding:4px 15px 14px}
+  .tool{padding:8px 0;border-top:1px dashed var(--line);display:flex;gap:12px}
+  .tool:first-child{border-top:none}
+  .tool .tn{flex:0 0 168px;font-family:var(--mono);font-size:12.5px;color:var(--ember2)}
+  .tool .td{color:#c9c9d3;font-size:13px}
+  .cnt{font-size:11.5px;color:var(--dimmer);font-family:var(--mono)}
+
+  /* ---------- prompts sidebar ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100vh;width:min(560px,94vw);background:linear-gradient(180deg,#0c0c11,#0a0a0d);
+    border-left:1px solid var(--line2);box-shadow:-30px 0 60px rgba(0,0,0,.5);transform:translateX(100%);
+    transition:.25s cubic-bezier(.4,0,.2,1);z-index:41;display:flex;flex-direction:column}
+  .drawer.on{transform:translateX(0)}
+  .drawer header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .drawer header b{font-size:16px}
+  .drawer header .x{margin-left:auto;cursor:pointer;color:var(--dim);font-size:20px;border:none;background:none}
+  .drawer .scroll{overflow-y:auto;padding:14px 22px 40px}
+  .pr{border:1px solid var(--line);border-radius:11px;margin:11px 0;overflow:hidden;background:var(--card)}
+  .pr h4{margin:0;padding:12px 15px;font-size:14px;display:flex;gap:9px;align-items:center;cursor:pointer}
+  .pr .where{font-family:var(--mono);font-size:11.5px;color:var(--cyan);padding:0 15px 6px}
+  .pr pre{margin:0;padding:12px 15px;background:#08080b;border-top:1px solid var(--line);color:#bfc3cc;
+    font-family:var(--mono);font-size:11.5px;white-space:pre-wrap;line-height:1.6;max-height:300px;overflow:auto}
+  .note{font-size:12.5px;color:var(--dim);background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);
+    border-radius:9px;padding:11px 14px;margin:12px 0}
+  .foot{margin-top:40px;color:var(--dimmer);font-size:12px;border-top:1px solid var(--line);padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- ============ NAV ============ -->
+  <nav>
+    <div class="brand"><img src="logo.png" alt="">
+      <div><b>Spheria</b><span>system map</span></div>
+    </div>
+    <a class="navlink on" data-go="overview"><span class="ico">◎</span>Overview</a>
+    <a class="navlink" data-go="diagram"><span class="ico">🕸</span>The wiring</a>
+    <a class="navlink" data-go="doors"><span class="ico">🚪</span>Doors (reach it)</a>
+    <a class="navlink" data-go="server"><span class="ico">🛰</span>Server :8470</a>
+    <a class="navlink" data-go="agent"><span class="ico">🔄</span>Agent loop</a>
+    <a class="navlink" data-go="brain"><span class="ico">🧠</span>The brain</a>
+    <a class="navlink" data-go="tools"><span class="ico">🧰</span>Tools (43)</a>
+    <a class="navlink" data-go="safety"><span class="ico">🛑</span>Safety &amp; STOP</a>
+    <a class="navlink" data-go="telegram"><span class="ico">📱</span>Telegram</a>
+    <a class="navlink" data-go="gui"><span class="ico">🖥</span>The GUI</a>
+    <a class="navlink" data-go="widget"><span class="ico">🦁</span>Widget &amp; unify</a>
+    <a class="navlink" data-go="gemini"><span class="ico">☁</span>Gemini &amp; ESO</a>
+    <a class="navlink" data-go="data"><span class="ico">🗃</span>Data &amp; memory</a>
+    <a class="navlink" data-go="files"><span class="ico">📄</span>Files built</a>
+    <div class="sep"></div>
+    <button class="promptbtn" onclick="openDrawer()">📜 Show the prompts →</button>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+    <h1>Spheria — how it all fits together</h1>
+    <p class="sub">A local, private AI woven into this Windows PC. This map shows every moving part, where it lives, and how the pieces talk. Click any box in the diagram, or open a section.</p>
+
+    <!-- OVERVIEW -->
+    <h2 class="sec" id="overview">◎ The big picture <span class="tag">read me first</span></h2>
+    <div class="card" open><div class="body">
+      <p><b>Spheria is two things that now act as one:</b></p>
+      <ul>
+        <li><b>Local Spheria</b> — lives on <code>E:\Spheria</code>. Its brain is a <b>local model</b> (Ollama, currently <code>qwen3-coder:30b</code>) running on your own GPU. No cloud. It has ~43 real tools (files, shell, Python, browser, email, cloud drives, music…). It runs a small web server on <code>127.0.0.1:8470</code> that everything talks to.</li>
+        <li><b>The Python widget (ESO / "Spheria 2.0")</b> — the floating desktop HUD on <code>C:\…\SPHERIA 2.0</code>. Its brain is <b>Gemini</b> (cloud). It oversees your ESO agents (intel brief, food, schedule, health). It is now <b>also a door</b> to the local brain via a ☁/🦁 toggle.</li>
+      </ul>
+      <p>So you have <span class="pill brain">a local brain (private, free, offline)</span> and <span class="pill cloud">a cloud brain (Gemini, smarter for big reasoning)</span>, and they can each borrow the other's hands. The local brain can phone Gemini (<code>ask_gemini</code>) and run ESO agents (<code>eso_agent</code>); the widget can route your typing to either brain.</p>
+      <div class="note">⭐ <b>The mental model:</b> every way you reach Spheria (terminal, GUI, phone, right-click, the widget) is a <b>"door"</b>. All doors lead to the same <b>server</b> → the same <b>agent loop</b> → the same <b>brain + tools</b>. Learn that one spine and everything else is just a different doorway onto it.</div>
+    </div></div>
+
+    <!-- DIAGRAM -->
+    <h2 class="sec" id="diagram">🕸 The wiring <span class="tag">click a box</span></h2>
+    <div class="diagram" id="diagramBox"></div>
+    <div class="legend">
+      <span><i style="background:#38bdf8"></i>Doors (how you reach it)</span>
+      <span><i style="background:#f59e0b"></i>Server &amp; loop (the spine)</span>
+      <span><i style="background:#34d399"></i>Brain (local model)</span>
+      <span><i style="background:#e9e9f0"></i>Tools</span>
+      <span><i style="background:#a78bfa"></i>Cloud / ESO (Gemini)</span>
+    </div>
+
+    <div id="sections"></div>
+
+    <div class="foot">
+      Spheria mapped · generated study aid · everything here reflects <code>E:\Spheria\.claude\CLAUDE.md</code> (the source of truth) and the live code. Dark-glass + ember, like the rest of Spheria. 🦁
+    </div>
+  </main>
+</div>
+
+<!-- ============ PROMPTS DRAWER ============ -->
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <header><img src="logo.png" style="width:26px;height:26px;border-radius:6px"><b>Where the prompts live</b>
+    <button class="x" onclick="closeDrawer()">✕</button></header>
+  <div class="scroll" id="prompts"></div>
+</aside>
+
+<script>
+/* ============================================================ DATA */
+
+const SECTIONS = [
+ {id:'doors', icon:'🚪', title:'Doors — every way to reach Spheria', html:`
+   <p>All of these end up at the same server + brain. They differ only in <i>where you type</i> and <i>how the answer is shown</i>.</p>
+   <div class="kv"><b>Terminal CLI</b><span><code>spheria</code> (chat), <code>spheria ask "…"</code> (one-shot, supports pipes), <code>spheria here &lt;folder&gt;</code> (folder quick-action). Lives in <code>src/spheria/cli.py</code>.</span></div>
+   <div class="kv"><b>Electron control center</b><span><code>spheria gui</code> opens the desktop app (<code>electron/main.js</code>) which loads the web GUI at <code>:8470</code>. Full dashboard, chat, models, routines, sessions, memory, settings.</span></div>
+   <div class="kv"><b>Quick-ask popup</b><span>Tray hotkey <code>Ctrl+Alt+S</code> → a tiny native box anywhere on screen. From <code>tray.py</code>.</span></div>
+   <div class="kv"><b>Folder right-click</b><span>"Ask Spheria here" → windowless <code>askbox</code> pops a glass box at your cursor → opens a console that works <i>in that folder</i> → "continue in GUI? y/n". Also <b>Send to → Ask Spheria</b>.</span></div>
+   <div class="kv"><b>Telegram (phone)</b><span>Message your bot from anywhere. The <code>telegram.py</code> bridge runs inside the server. See the Telegram section.</span></div>
+   <div class="kv"><b>The Python widget</b><span>The floating HUD. ☁ = Gemini, 🦁 = local Spheria (streams from <code>:8470</code>). See Widget &amp; unify.</span></div>
+   <p style="margin-top:14px">Each door builds an <b>Agent</b> with a <b>Policy</b> (who can approve actions) and a <b>working directory</b>, then calls <code>agent.chat(message)</code>.</p>`},
+
+ {id:'server', icon:'🛰', title:'The Control Center server — :8470', html:`
+   <p>A small <b>FastAPI</b> app (<code>src/spheria/server.py</code>) bound to <code>127.0.0.1:8470</code> — loopback only, never exposed to the network. It is the hub every door talks to, and it serves the GUI.</p>
+   <p><b>When it starts</b> (its "lifespan"), it launches two daemon threads: the <span class="pill">Telegram bridge</span> and the <span class="pill">routine scheduler</span>. It starts Ollama on first need.</p>
+   <p><b>Key endpoints:</b></p>
+   <ul>
+     <li><code>POST /api/chat</code> — the main one. Streams the whole turn back as Server-Sent Events (text, tool calls, results, confirm requests). <span class="pill">SSE</span></li>
+     <li><code>POST /api/chat/stop</code> — sets the agent's stop flag → halts the turn between steps. <span class="pill gate">the STOP button calls this</span></li>
+     <li><code>POST /api/confirm</code> — the owner arms/denies a gated destructive action (GUI cards call it). <span class="pill gate">model can't call this</span></li>
+     <li><code>GET /api/events</code> — the firehose: a live stream of meaningful activity from <i>every</i> door, so the widget orb can narrate. <span class="pill">SSE</span></li>
+     <li><code>POST /api/panic</code> — emergency stop everything.</li>
+     <li><code>/api/config · /api/models · /api/sessions · /api/routines · /api/memory · /api/status</code> — the GUI's data.</li>
+   </ul>
+   <div class="note">It refuses to start a second copy if the port already answers — two servers = two Telegram pollers = dropped messages.</div>`},
+
+ {id:'agent', icon:'🔄', title:'The agent loop — the heart', html:`
+   <p>In <code>src/spheria/agent.py</code>. This is the cycle that turns your message into actions. Every door runs the same loop.</p>
+   <div class="flow">your message
+   → build the system prompt (identity + tools + memory + skills)
+   → send the whole conversation to the brain (Ollama)
+   → stream the reply  ── text? show it
+                        └─ tool call? → dispatch the tool → feed the result back → loop
+   → no more tool calls → final answer → save the session</div>
+   <p><b>Guard rails baked into the loop:</b></p>
+   <ul>
+     <li><b>Flail guards</b> — stops the model spinning: exact-repeat (3×), per-tool failure/empty streak (3 → that tool is cut off for the turn), and a hard budget of 12 calls per tool per turn. <span class="pill ok">fixed the "20 dead searches" problem</span></li>
+     <li><b>Context compaction</b> — when the conversation outgrows the model's window, older turns are summarised so long chats keep working.</li>
+     <li><b>Events tee</b> — every meaningful step is also published to the <code>/api/events</code> firehose.</li>
+     <li><b>Stop flag</b> — checked between every step, so STOP / <code>/api/chat/stop</code> actually halts it.</li>
+   </ul>`},
+
+ {id:'brain', icon:'🧠', title:'The brain — a swappable local model', html:`
+   <p>Spheria's "brain" is whatever Ollama model you point it at. The pointer is one line in <code>spheria.config.json</code> (<code>"model"</code>), read fresh everywhere, so swapping it in the GUI changes it for every door at once.</p>
+   <div class="kv"><b>Current brain</b><span><code>qwen3-coder:30b</code> — strong at tool-calling &amp; coding, lightly aligned so it complies on your private machine.</span></div>
+   <div class="kv"><b>Hard rule</b><span>The brain <b>must support "tools"</b>. Models without it (the uncensored dolphin / llama2-uncensored / wizard-vicuna ones) become a dumb chatbot with no file/shell/web access. Only <code>qwen3-coder:30b</code> &amp; <code>gpt-oss:20b</code> here support tools.</span></div>
+   <div class="kv"><b>"Uncensored"</b><span>Comes from the <b>system prompt</b> (private-machine directive), not the model — so you keep a capable tool-caller AND get no content-policy refusals. Works on any model.</span></div>
+   <div class="kv"><b>Hardware</b><span>RTX 5060 Ti 16 GB + 64 GB RAM. <code>gpu_reserve_gb</code> leaves VRAM headroom so the desktop doesn't crash CUDA. Weights live on <code>E:\\Ollama\\models</code>.</span></div>
+   <div class="kv"><b>Not vision</b><span>The brain can't see images — it must never screenshot to "read" the screen.</span></div>`},
+
+ {id:'safety', icon:'🛑', title:'Safety — the gate, the STOP, the panic', html:`
+   <p>Three layers protect you, strongest first:</p>
+   <p><b>1 · The destructive-action gate</b> (<code>src/spheria/safety.py</code>). Deleting, shutdown/restart, format, registry edits and <i>sending email</i> are classified and <b>blocked behind your explicit approval on every channel</b> — auto-approve does NOT bypass it.</p>
+   <div class="flow">model calls a destructive tool
+   → tool returns needs_confirm + a one-time token (nothing happens yet)
+   → you approve:  GUI confirm-card  ·  Telegram "yes"/"no"  ·  terminal y/n  ·  widget reply
+   → ONLY then does the model retry the same call and it runs
+   the model can never approve itself — approval comes from a human channel</div>
+   <p><b>2 · The STOP button</b> (widget) + <b>Esc</b> — calls <code>/api/chat/stop</code>, halting a runaway turn between steps; also kills a running Gemini turn. Greyed when idle, bright red while working. <span class="pill gate">new — there was no stop before</span></p>
+   <p><b>3 · Panic</b> — <code>spheria panic</code> / desktop <b>Spheria PANIC</b> / <code>POST /api/panic</code> kills server + bridge + routines + tray + Electron + Ollama and removes login autostart. The "stop absolutely everything" button.</p>`},
+
+ {id:'telegram', icon:'📱', title:'Telegram — command it from your phone', html:`
+   <p><code>src/spheria/telegram.py</code>. A bridge that long-polls Telegram's servers (no open ports, works behind any router) and runs the same agent loop for messages from your phone.</p>
+   <div class="flow">your phone → Telegram cloud → bridge long-poll (getUpdates) → agent.chat() → reply back to your phone</div>
+   <ul>
+     <li><b>Runs inside the server</b> as a daemon thread (starts automatically when a bot token is set).</li>
+     <li><b>One poller only</b> — a named mutex (<code>Local\\SpheriaTelegramBridge</code>) guarantees a single getUpdates poller; two would 409-conflict and silently drop messages.</li>
+     <li><b>Auto-pairs</b> the first chat that messages it, then ignores all others (that chat id is the password).</li>
+     <li><b>Gated actions:</b> when the brain wants to do something destructive, the bridge asks you in chat; a bare <b>"yes"/"no"</b> reply arms or denies it — the model can't self-approve.</li>
+     <li><b>Commands:</b> <code>/new</code> (fresh chat), <code>/status</code>, <code>/model &lt;name&gt;</code>, <code>/screenshot</code> (captures the PC, sends the photo).</li>
+   </ul>`},
+
+ {id:'gui', icon:'🖥', title:'The GUI — the control center', html:`
+   <p>One self-contained file: <code>src/spheria/gui/index.html</code> (no CDNs, dark-glass + ember). Served by the server, wrapped by Electron (<code>electron/main.js</code>) for a desktop app.</p>
+   <p><b>Tabs:</b> <span class="pill">Dashboard</span> <span class="pill">Chat</span> <span class="pill">Models</span> <span class="pill">Routines</span> <span class="pill">Sessions</span> <span class="pill">Memory</span> <span class="pill">Settings</span></p>
+   <ul>
+     <li><b>Chat</b> streams the SSE turn — text, collapsible tool calls, thinking, plan, and red <b>approve/deny confirm-cards</b> for gated actions (they POST <code>/api/confirm</code>).</li>
+     <li><b>Models</b> — see installed models, swap the brain, pull new ones from ollama.com.</li>
+     <li><b>Settings → Integrations</b> — a JSON editor for email / OneDrive / Google / Notion / RSS / API keys, plus Telegram setup.</li>
+     <li><b>Deep-link</b> — <code>/?session=&lt;id&gt;</code> opens straight into a past conversation (used by the folder quick-action's "continue in GUI").</li>
+   </ul>`},
+
+ {id:'widget', icon:'🦁', title:'The Python widget & the unification', html:`
+   <p>The floating HUD (<code>…/SPHERIA 2.0/spheria/widget_spheria_v2.py</code>). Originally a Gemini chat + ESO agent overseer. Now <b>also a door to the local brain</b>. Backup kept at <code>widget_spheria_v2.py.bak-unify-20260612</code>; restart the widget to load changes.</p>
+   <div class="kv"><b>☁ / 🦁 toggle</b><span>Next to the input. ☁ = Gemini (default, unchanged). 🦁 = local Spheria — your typing streams to <code>:8470/api/chat</code> (<code>LocalBrainThread</code>); tool calls scroll into the orb terminal.</span></div>
+   <div class="kv"><b>■ STOP + Esc</b><span>Halts the local (or cloud) turn instantly. Red while working.</span></div>
+   <div class="kv"><b>Status dot</b><span>The old red "mobile server" dot now shows the <b>E-server health</b> (green = up); click it to open the control center. The old <code>:8765</code> LAN server is retired (Telegram replaced it).</span></div>
+   <div class="kv"><b>Logo click</b><span>Single-click the lion → launches the E control center.</span></div>
+   <div class="kv"><b>Orb narration</b><span><code>LocalEventsThread</code> subscribes to <code>/api/events</code> → the orb narrates phone/routine activity even when you're chatting from your phone.</span></div>
+   <div class="note">Shared identity: both halves point at the <b>same credentials folder</b>, so email/cloud work with zero new sign-ins. Secrets are never read into chat — tools only ever read keys at runtime.</div>`},
+
+ {id:'gemini', icon:'☁', title:'Gemini & ESO — how the cloud fits in', html:`
+   <p>Gemini is the <b>cloud brain</b>. It powers the widget's ☁ mode and the ESO agents. The local brain stays local but can <i>call</i> Gemini when it needs heavy reasoning.</p>
+   <div class="grid2">
+     <div class="card" open><div class="body" style="border:none;padding:6px 4px">
+       <p><b>What GEMINI drives (the widget / ESO side)</b></p>
+       <ul>
+         <li>The widget's cloud chat (function-calling over the ESO function registry).</li>
+         <li><b>ESO agents</b> — purpose-built, run as subprocesses: <span class="pill">intel</span> (morning/market brief), <span class="pill">food</span> (FatSecret logging), <span class="pill">schedule</span> (calendar planning), <span class="pill">health</span> (Atlas coach + pipeline).</li>
+         <li>ESO's own connectors: Outlook/Gmail, MS To-Do, calendar, news, YouTube, jobs, FatSecret.</li>
+       </ul>
+     </div></div>
+     <div class="card" open><div class="body" style="border:none;padding:6px 4px">
+       <p><b>How LOCAL Spheria touches the cloud</b></p>
+       <ul>
+         <li><code>ask_gemini</code> — one-shot "phone a friend" to Gemini for hard reasoning / long summaries. The ONLY tool that leaves the machine. Key read at runtime, never logged. <span class="pill cloud">tool</span></li>
+         <li><code>eso_agent</code> — runs an ESO agent directly (intel / schedule / health). Interactive ones (food/atlas) say "run me in the widget". <span class="pill cloud">tool</span></li>
+       </ul>
+       <p style="color:var(--dim);font-size:13px">Local Spheria itself keeps its full ~43-tool catalog (see Tools). Gemini-in-ESO uses ESO's function registry + agents instead.</p>
+     </div></div>
+   </div>
+   <div class="note">❌ <b>Declined by you:</b> making Gemini a switchable <i>brain inside</i> E. The E drive stays the local model — it just gains the ability to <i>call</i> Gemini.</div>`},
+
+ {id:'data', icon:'🗃', title:'Data, memory & where things are saved', html:`
+   <div class="kv"><b>Config</b><span><code>spheria.config.json</code> — the brain pointer + all settings + <code>integrations</code> (email, cloud, music, Gemini, ESO paths…).</span></div>
+   <div class="kv"><b>Sessions</b><span><code>home/sessions/*.json</code> — every conversation from every door, resume-able.</span></div>
+   <div class="kv"><b>Memory</b><span><code>home/memory/MEMORY.md</code> — what Spheria remembers about you across sessions (the <code>remember</code> tool appends here; injected into the system prompt). The prompt pushes it to learn your interests/habits over time.</span></div>
+   <div class="kv"><b>Routines</b><span><code>home/routines.json</code> — scheduled prompts that run unattended (the scheduler checks every 20s), optionally delivered to Telegram.</span></div>
+   <div class="kv"><b>Workspace</b><span><code>E:\\Spheria\\workspace</code> — Spheria's tidy playground for when no folder is given (one project subfolder per task). When you point it at a specific folder, it works THERE instead.</span></div>
+   <div class="kv"><b>Secrets</b><span><code>home/secrets</code> (its own OAuth caches) + the shared ESO creds dir. Never read into chat.</span></div>
+   <div class="kv"><b>Logs / screenshots / browsers</b><span><code>home/logs</code>, <code>home/screenshots</code>, <code>home/browsers</code> (Playwright Chromium).</span></div>`},
+
+ {id:'files', icon:'📄', title:'What was built / changed this rebuild', html:`
+   <p><b>New files:</b></p>
+   <p>
+     <span class="pill path">src/spheria/events.py</span><span class="pill path">tools/feeds.py</span><span class="pill path">tools/mail.py</span>
+     <span class="pill path">tools/cloud.py</span><span class="pill path">tools/media.py</span><span class="pill path">tools/bridge.py</span>
+     <span class="pill path">tools/graph_auth.py</span><span class="pill path">skills/cloud-and-email.md</span>
+     <span class="pill path">docs/UNIFICATION_PLAN.md</span><span class="pill path">docs/AUDIT_PROMPT.md</span>
+     <span class="pill path">install/context_menu.reg</span><span class="pill path">Spheria mapped/ (this)</span>
+   </p>
+   <p><b>Changed:</b></p>
+   <p>
+     <span class="pill path">agent.py</span><span class="pill path">safety.py</span><span class="pill path">cli.py</span><span class="pill path">server.py</span>
+     <span class="pill path">telegram.py</span><span class="pill path">config.py</span><span class="pill path">paths.py</span><span class="pill path">tools/__init__.py</span>
+     <span class="pill path">tools/fs.py</span><span class="pill path">tools/shell.py</span><span class="pill path">tools/pyexec.py</span><span class="pill path">tools/windows.py</span>
+     <span class="pill path">tools/browser.py</span><span class="pill path">gui/index.html</span><span class="pill path">install/setup.ps1</span>
+     <span class="pill path">electron/main.js</span><span class="pill path">widget_spheria_v2.py (C:)</span>
+   </p>
+   <p><b>What changed, in plain words:</b></p>
+   <ul>
+     <li>Added the <b>destructive-action gate</b> + GUI/Telegram/widget approval + <b>STOP</b>.</li>
+     <li>Added <b>email, RSS, OneDrive, Google Drive, Notion, generic API, music, ask_gemini, eso_agent</b> tools.</li>
+     <li>Fixed the brain (tool-capable model), <b>uncensored via prompt</b>, fixed pyexec/pip, flail guards.</li>
+     <li>Made <code>open_windows_app</code> launch <b>any installed app</b> (incl. Store apps like Claude/Codex).</li>
+     <li>The <b>folder right-click</b> quick-action (glass box at cursor → console → continue).</li>
+     <li>The <b>/api/events</b> firehose + widget unification (toggle, status dot, logo, narration, STOP).</li>
+   </ul>`},
+];
+
+const TOOLGROUPS = [
+ {name:'Files', icon:'📁', tools:[
+   ['list_dir','list a folder'],['read_file','read a text file (slice big ones)'],
+   ['write_file','create/overwrite a text file (shows a diff, refuses to corrupt .xlsx/.docx)'],
+   ['edit_file','surgical find-and-replace edit'],['glob_files','find files by pattern'],
+   ['grep_search','search file contents by regex'],
+   ['delete_path','delete → Recycle Bin · GATED (needs your approval)','gate']]},
+ {name:'Shell & Python', icon:'⌨', tools:[
+   ['run_shell','run a Windows command (destructive ones are GATED)','gate'],
+   ['python_exec','persistent Python REPL — analysis, charts, COM, bulk file ops'],
+   ['pip_install','install a package into the Spheria venv']]},
+ {name:'Apps & Office', icon:'🪟', tools:[
+   ['open_windows_app','launch ANY installed app by name (incl. Store apps: Claude, Codex, Spotify…)'],
+   ['list_apps','find the exact app name'],
+   ['create_excel_workbook','real .xlsx'],['create_word_document','real .docx']]},
+ {name:'Web & browsing', icon:'🌐', tools:[
+   ['web_search','search the web'],['fetch_url','read a page/API as text'],
+   ['browser_goto','drive a real Chromium (JS sites) — visible by default'],
+   ['browser_click','click a numbered element'],['browser_type','type into a field'],
+   ['browser_scrape','structured links+headings+text (the reddit "scrape & curate" flow)'],
+   ['browser_scroll','load infinite feeds'],['browser_screenshot','screenshot the page'],
+   ['browser_close','close the browser']]},
+ {name:'News & data', icon:'📰', tools:[
+   ['check_rss','THE news tool — RSS/Atom feeds (hackernoon, BBC, Verge…)'],
+   ['describe_table','inspect a CSV/Excel/Parquet'],['query_table','query a table']]},
+ {name:'Email', icon:'✉', tools:[
+   ['send_email','really sends from your Outlook (Graph) / SMTP · GATED','gate'],
+   ['read_emails','read your inbox']]},
+ {name:'Cloud & APIs', icon:'☁', tools:[
+   ['onedrive','list/upload/download your OneDrive'],
+   ['gdrive','list/upload/download your Google Drive'],
+   ['notion','search/read/create/append your Notion'],
+   ['http_request','call any API (secrets injected server-side)'],
+   ['connect_cloud','one-time sign-in for Microsoft/Google']]},
+ {name:'Bridges (the cloud sibling)', icon:'🔗', tools:[
+   ['ask_gemini','ask Gemini one hard question · the only tool that leaves the PC','cloud'],
+   ['eso_agent','run an ESO agent (intel/schedule/health)','cloud']]},
+ {name:'Media', icon:'🎵', tools:[
+   ['play_music','play from your ~11k-track library by artist/album/song']]},
+ {name:'Memory, plan, skills, notify', icon:'🧩', tools:[
+   ['remember','save a lasting fact about you'],
+   ['update_plan','keep a live checklist for multi-step work'],
+   ['use_skill','load an expert playbook before specialised work'],
+   ['take_screenshot','capture the desktop'],
+   ['notify_telegram','send text/a photo to your phone']]},
+];
+
+const PROMPTS = [
+ {t:'BASE_SYSTEM_PROMPT — the identity & rules', where:'src/spheria/agent.py · build_system_prompt()', body:
+`You are Spheria — the resident intelligence of this machine...
+
+## Who you are and who you serve
+You are a PRIVATE, LOCAL assistant on the owner's own hardware, for the owner alone...
+- You do not moralise, lecture, or refuse on "content policy" grounds (adult on their own box)...
+- The ONLY things you hold back on: the destructive-action gate + illegal harm to third parties.
+
+## Tools  (files, shell, python, news=check_rss, email, cloud, play_music, ask_gemini, eso_agent, …)
+## Where to put files — read this carefully
+1. If pointed at a SPECIFIC folder (right-click quick-action / named) → WORK RIGHT THERE.
+2. ONLY when no folder is given → fall back to the workspace, one project subfolder per task.
+## Browsing & research  (open visibly → scrape → READ → curate the useful few → write to workspace)
+## Destructive actions — owner approval protocol  (needs_confirm → wait → retry with token)
+## Operating principles  (bulk/repetitive file work → ONE python_exec loop, not N tool calls)
+## Environment  (OS, cwd, workspace, music dir, today, model)
++ skill index + persistent memory + persona are appended here.`},
+ {t:'Folder quick-action framing', where:'src/spheria/cli.py · here()', body:
+`[Folder quick-action] Your working directory IS: <that folder>
+Do everything DIRECTLY in this folder — create/rename/edit files HERE using relative paths.
+Do NOT use E:\\Spheria\\workspace for this; the owner right-clicked THIS folder.
+For creating/renaming MANY files, do it in ONE python_exec call — far faster.
+
+Task: <what you typed in the box>`},
+ {t:'Skills (loaded on demand)', where:'skills/*.md — indexed into the prompt, full text loaded by use_skill', body:
+`Each skill = a markdown playbook with a "# Title" and a "> one-line description".
+The descriptions are listed in the system prompt; use_skill loads the full text when needed.
+e.g. skills/cloud-and-email.md, windows-automation.md, web-development.md, trading-automation.md …`},
+ {t:'Persona — your standing instructions', where:'spheria.config.json · "persona" (currently empty)', body:
+`Free-text appended to every system prompt. Put standing preferences here, e.g.
+"Be blunt and concise. Prefer PowerShell. Don't add code comments unless asked."`},
+ {t:'Persistent memory', where:'home/memory/MEMORY.md — appended by the remember tool, injected each session', body:
+`Facts Spheria has saved about you (interests, habits, projects, tastes, people).
+Injected into the system prompt so it genuinely knows you over time.`},
+ {t:'Destructive-gate instruction (to the model)', where:'src/spheria/safety.py · gate_destructive()', body:
+`BLOCKED — this would <reason> and needs the owner's explicit approval first.
+Stop. Tell the owner in one sentence what you want to do and that they must approve.
+Do NOT retry until they approve. When they do, retry the IDENTICAL call once with confirm_token=…
+If they say no, drop it and tell them it was not done.`},
+ {t:'Telegram bridge messages', where:'src/spheria/telegram.py', body:
+`Pairing: "🦁 Spheria connected — this chat is now authorised as the owner."
+Help: /new /status /model /screenshot
+Gated action: "⚠️ Approval needed: <summary> — reply YES to approve or NO to refuse."`},
+ {t:'Context-compaction prompt', where:'src/spheria/agent.py · _maybe_compact()', body:
+`Summarise this conversation segment for context compression. Keep: user goals, decisions made,
+file paths touched, key facts/numbers, unfinished work. Under 400 words, plain text.`},
+];
+
+/* ============================================================ RENDER */
+const $ = s => document.querySelector(s);
+
+function renderSections(){
+  $('#sections').innerHTML = SECTIONS.map(s=>`
+    <h2 class="sec" id="${s.id}">${s.icon} ${s.title}</h2>
+    <details class="card" id="card-${s.id}"><summary><span class="em">${s.icon}</span> ${s.title}
+      <span class="chev">▶</span></summary>
+      <div class="body">${s.html}</div>
+    </details>`).join('') + renderTools();
+}
+
+function renderTools(){
+  const total = TOOLGROUPS.reduce((n,g)=>n+g.tools.length,0);
+  return `<h2 class="sec" id="tools">🧰 The tools — what local Spheria can do <span class="tag">${total} tools</span></h2>
+    <p class="sub" style="margin:-4px 0 10px">Every tool the local brain can call. <span class="pill gate">GATED</span> = needs your approval. <span class="pill cloud">CLOUD</span> = leaves the PC.</p>` +
+    TOOLGROUPS.map(g=>`
+     <details class="tg"><summary>${g.icon} ${g.name} <span class="cnt">${g.tools.length}</span><span class="chev">▶</span></summary>
+       <div class="tools">${g.tools.map(t=>`
+         <div class="tool"><div class="tn">${t[0]}${t[2]==='gate'?' <span class="pill gate" style="margin:0">gated</span>':t[2]==='cloud'?' <span class="pill cloud" style="margin:0">cloud</span>':''}</div>
+         <div class="td">${t[1]}</div></div>`).join('')}</div>
+     </details>`).join('');
+}
+
+function renderPrompts(){
+  $('#prompts').innerHTML = `<div class="note">These are the instructions that shape how Spheria thinks. They stack: identity → tools → file rules → memory → skills → persona, all assembled fresh every turn.</div>` +
+    PROMPTS.map((p,i)=>`
+     <div class="pr">
+       <h4 onclick="this.parentNode.querySelector('pre').style.display=this.parentNode.querySelector('pre').style.display==='none'?'block':'none'">📜 ${p.t}<span style="margin-left:auto;color:var(--dimmer)">▾</span></h4>
+       <div class="where">↳ ${p.where}</div>
+       <pre>${esc(p.body)}</pre>
+     </div>`).join('');
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ---------- diagram (SVG) ---------- */
+function renderDiagram(){
+  const door=(x,t,s)=>`<g class="node" onclick="goSection('doors')"><rect x="${x}" y="26" width="138" height="50" rx="11" fill="#0f1722" stroke="#38bdf8" stroke-width="1.3"/><text x="${x+69}" y="50" text-anchor="middle" class="nlabel" fill="#cfeaff">${t}</text><text x="${x+69}" y="66" text-anchor="middle" class="nsub">${s}</text></g>`;
+  const doors = [['Terminal','spheria'],['Control center','Electron'],['Quick-ask','Ctrl+Alt+S'],['Right-click','Ask here'],['Telegram','phone'],['Widget','☁ / 🦁']];
+  let dx=14, doorsSvg = doors.map(d=>{const g=door(dx,d[0],d[1]);dx+=162;return g;}).join('');
+  const lines = doors.map((d,i)=>`<path d="M ${14+162*i+69} 76 C ${14+162*i+69} 110, 500 110, 500 150" fill="none" stroke="#26415a" stroke-width="1.2"/>`).join('');
+  return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+   <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5a4a2a"/></marker></defs>
+   <text x="500" y="16" text-anchor="middle" class="nsub" fill="#6a6a78">THE DOORS — every way you reach Spheria</text>
+   ${doorsSvg}${lines}
+   <!-- server -->
+   <g class="node" onclick="goSection('server')"><rect x="320" y="150" width="360" height="56" rx="13" fill="#1a1407" stroke="#f59e0b" stroke-width="1.6"/>
+     <text x="500" y="174" text-anchor="middle" class="nlabel" fill="#fbbf24">Control Center Server · 127.0.0.1:8470</text>
+     <text x="500" y="192" text-anchor="middle" class="nsub">FastAPI · SSE chat · /api/confirm · /api/events · serves GUI</text></g>
+   <path d="M 500 206 L 500 244" stroke="#5a4a2a" stroke-width="1.6" marker-end="url(#ar)"/>
+   <!-- agent loop -->
+   <g class="node" onclick="goSection('agent')"><rect x="350" y="246" width="300" height="56" rx="13" fill="#141016" stroke="#f59e0b" stroke-width="1.4"/>
+     <text x="500" y="270" text-anchor="middle" class="nlabel">The Agent Loop · agent.py</text>
+     <text x="500" y="288" text-anchor="middle" class="nsub">prompt → brain → tools → repeat</text></g>
+   <!-- satellites: safety, events, memory -->
+   <g class="node" onclick="goSection('safety')"><rect x="40" y="248" width="150" height="52" rx="11" fill="#1a0d0d" stroke="#ef4444" stroke-width="1.3"/><text x="115" y="270" text-anchor="middle" class="nlabel" fill="#fca5a5">Safety gate</text><text x="115" y="286" text-anchor="middle" class="nsub">+ STOP + panic</text></g>
+   <path d="M 190 274 L 348 274" stroke="#5a2a2a" stroke-width="1.2" marker-end="url(#ar)"/>
+   <g class="node" onclick="goSection('data')"><rect x="810" y="248" width="150" height="52" rx="11" fill="#0d1512" stroke="#34d399" stroke-width="1.2"/><text x="885" y="270" text-anchor="middle" class="nlabel" fill="#86efac">Memory · sessions</text><text x="885" y="286" text-anchor="middle" class="nsub">routines · config</text></g>
+   <path d="M 652 274 L 808 274" stroke="#2a5a44" stroke-width="1.2" marker-end="url(#ar)"/>
+   <!-- brain + tools row -->
+   <path d="M 430 302 L 360 350" stroke="#2a5a44" stroke-width="1.5" marker-end="url(#ar)"/>
+   <path d="M 570 302 L 640 350" stroke="#5a4a2a" stroke-width="1.5" marker-end="url(#ar)"/>
+   <g class="node" onclick="goSection('brain')"><rect x="210" y="352" width="290" height="58" rx="13" fill="#0d1512" stroke="#34d399" stroke-width="1.6"/>
+     <text x="355" y="376" text-anchor="middle" class="nlabel" fill="#86efac">🧠 Brain · Ollama (local)</text>
+     <text x="355" y="394" text-anchor="middle" class="nsub">qwen3-coder:30b · your GPU</text></g>
+   <g class="node" onclick="goSection('tools')"><rect x="520" y="352" width="290" height="58" rx="13" fill="#13131a" stroke="#cfcfda" stroke-width="1.4"/>
+     <text x="665" y="376" text-anchor="middle" class="nlabel">🧰 Tools · 43</text>
+     <text x="665" y="394" text-anchor="middle" class="nsub">files · shell · web · email · cloud · music</text></g>
+   <!-- cloud bridges -->
+   <path d="M 665 410 L 665 452" stroke="#5a4a2a" stroke-width="1.4" marker-end="url(#ar)"/>
+   <g class="node" onclick="goSection('gemini')"><rect x="360" y="454" width="280" height="56" rx="13" fill="#15101f" stroke="#a78bfa" stroke-width="1.4"/>
+     <text x="500" y="478" text-anchor="middle" class="nlabel" fill="#c4b5fd">☁ Gemini (cloud) &amp; ESO agents</text>
+     <text x="500" y="496" text-anchor="middle" class="nsub">ask_gemini · eso_agent · the widget's brain</text></g>
+   <g class="node" onclick="goSection('gemini')"><rect x="680" y="454" width="280" height="56" rx="13" fill="#15101f" stroke="#a78bfa" stroke-width="1.1" opacity=".9"/>
+     <text x="820" y="478" text-anchor="middle" class="nlabel" fill="#c4b5fd">ESO: intel · food · schedule · health</text>
+     <text x="820" y="496" text-anchor="middle" class="nsub">run as subprocesses</text></g>
+   <path d="M 640 482 L 678 482" stroke="#46367a" stroke-width="1.2" marker-end="url(#ar)"/>
+   <text x="500" y="556" text-anchor="middle" class="nsub" fill="#6a6a78">local stays local · it can CALL the cloud, but the cloud is never its brain</text>
+  </svg>`;
+}
+
+/* ---------- interactions ---------- */
+function goSection(id){
+  document.querySelectorAll('.card').forEach(c=>{if(c.id!=='card-'+id)c.removeAttribute('open')});
+  const card = $('#card-'+id); if(card) card.setAttribute('open','');
+  const target = card || $('#'+id);
+  if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+  setActive(id);
+}
+function setActive(id){ document.querySelectorAll('nav .navlink').forEach(a=>a.classList.toggle('on',a.dataset.go===id)); }
+function openDrawer(){ $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); }
+function closeDrawer(){ $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); }
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer()});
+
+/* ---------- boot ---------- */
+renderSections();
+renderPrompts();
+$('#diagramBox').innerHTML = renderDiagram();
+document.querySelectorAll('nav .navlink').forEach(a=>a.addEventListener('click',()=>{
+  const id=a.dataset.go;
+  if(id==='overview'){ $('#overview').scrollIntoView({behavior:'smooth'}); setActive('overview'); return; }
+  if(id==='diagram'){ $('#diagram').scrollIntoView({behavior:'smooth'}); setActive('diagram'); return; }
+  goSection(id);
+}));
+/* highlight nav on scroll */
+const ids=['overview','diagram',...SECTIONS.map(s=>s.id),'tools'];
+const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){const id=e.target.id.replace('card-','');if(ids.includes(id))setActive(id);}})},{rootMargin:'-20% 0px -70% 0px'});
+ids.forEach(id=>{const el=$('#'+id);if(el)obs.observe(el)});
+</script>
+</body>
+</html>
