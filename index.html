@@ -162,8 +162,7 @@
     <a class="navlink" data-go="gemini"><span class="ico">☁</span>Gemini &amp; ESO</a>
     <a class="navlink" data-go="esodata"><span class="ico">💼</span>Your data &amp; functions</a>
     <a class="navlink" data-go="data"><span class="ico">🗃</span>Data &amp; memory</a>
-    <a class="navlink" data-go="files"><span class="ico">📄</span>Files built</a>
-    <a class="navlink" data-go="test"><span class="ico">🧪</span>Try it / test it</a>
+    <a class="navlink" data-go="test"><span class="ico">🧪</span>Things to ask it</a>
     <div class="sep"></div>
     <button class="promptbtn" onclick="openDrawer()">📜 Show the prompts →</button>
   </nav>
@@ -179,7 +178,7 @@
       <p><b>Spheria is two things that now act as one:</b></p>
       <ul>
         <li><b>Local Spheria</b> — lives on <code>E:\Spheria</code>. Its brain is a <b>local model</b> (Ollama, currently <code>qwen3-coder:30b</code>) running on your own GPU. No cloud. It has ~43 real tools (files, shell, Python, browser, email, cloud drives, music…). It runs a small web server on <code>XXX.XXX.XXX.XXX:8470</code> that everything talks to.</li>
-        <li><b>The Python widget (ESO / "Spheria 2.0")</b> — the floating desktop HUD on <code>C:\…\SPHERIA 2.0</code>. Its brain is <b>Gemini</b> (cloud). It oversees your ESO agents (intel brief, food, schedule, health). It is now <b>also a door</b> to the local brain via a ☁/🦁 toggle.</li>
+        <li><b>The Python widget (ESO / "Spheria 2.0")</b> — the floating desktop HUD on <code>C:\…\SPHERIA 2.0</code>. Its brain is <b>Gemini</b> (cloud). It oversees your ESO agents (intel brief, food, schedule, health). It is <b>also a door</b> to the local brain via a ☁/🦁 toggle.</li>
       </ul>
       <p>So you have <span class="pill brain">a local brain (private, free, offline)</span> and <span class="pill cloud">a cloud brain (Gemini, smarter for big reasoning)</span>, and they can each borrow the other's hands. The local brain can phone Gemini (<code>ask_gemini</code>) and run ESO agents (<code>eso_agent</code>); the widget can route your typing to either brain.</p>
       <div class="note">⭐ <b>The mental model:</b> every way you reach Spheria (terminal, GUI, phone, right-click, the widget) is a <b>"door"</b>. All doors lead to the same <b>server</b> → the same <b>agent loop</b> → the same <b>brain + tools</b>. Learn that one spine and everything else is just a different doorway onto it.</div>
@@ -250,8 +249,8 @@ const SECTIONS = [
    → no more tool calls → final answer → save the session</div>
    <p><b>Guard rails baked into the loop:</b></p>
    <ul>
-     <li><b>Flail guards</b> — stops the model spinning: exact-repeat (3×), per-tool failure/empty streak (3 → that tool is cut off for the turn), and a hard budget of 12 calls per tool per turn. <span class="pill ok">fixed the "20 dead searches" problem</span></li>
-     <li><b>Context compaction</b> — when the conversation outgrows the model's window, older turns are summarised so long chats keep working.</li>
+     <li><b>Flail guards</b> — stop the model spinning: exact-repeat (3×), per-tool failure/empty streak (3 → that tool is cut off for the turn), and a hard budget of 12 calls per tool per turn.</li>
+     <li><b>Context compaction</b> — when the conversation outgrows the model's window, older turns are summarised <i>for the model</i> so long chats keep working — but the <b>full transcript is saved</b>, so the GUI/Sessions always show the whole conversation, never just the summary.</li>
      <li><b>Events tee</b> — every meaningful step is also published to the <code>/api/events</code> firehose.</li>
      <li><b>Stop flag</b> — checked between every step, so STOP / <code>/api/chat/stop</code> actually halts it.</li>
    </ul>`},
@@ -266,13 +265,13 @@ const SECTIONS = [
 
  {id:'safety', icon:'🛑', title:'Safety — the gate, the STOP, the panic', html:`
    <p>Three layers protect you, strongest first:</p>
-   <p><b>1 · The destructive-action gate</b> (<code>src/spheria/safety.py</code>). Deleting, shutdown/restart, format, registry edits and <i>sending email</i> are classified and <b>blocked behind your explicit approval on every channel</b> — auto-approve does NOT bypass it.</p>
+   <p><b>1 · The destructive-action gate</b> (<code>src/spheria/safety.py</code>). Deleting, shutdown/restart, format, registry edits, <i>installing packages</i> and <i>sending email to anyone new</i> are classified and <b>blocked behind your explicit approval on every channel</b> — auto-approve does NOT bypass it. (Mail to your own pre-approved addresses sends without asking.)</p>
    <div class="flow">model calls a destructive tool
    → tool returns needs_confirm + a one-time token (nothing happens yet)
    → you approve:  GUI confirm-card  ·  Telegram "yes"/"no"  ·  terminal y/n  ·  widget reply
    → ONLY then does the model retry the same call and it runs
    the model can never approve itself — approval comes from a human channel</div>
-   <p><b>2 · The STOP button</b> (widget) + <b>Esc</b> — calls <code>/api/chat/stop</code>, halting a runaway turn between steps; also kills a running Gemini turn. Greyed when idle, bright red while working. <span class="pill gate">new — there was no stop before</span></p>
+   <p><b>2 · STOP</b> — the STOP button (GUI &amp; widget) + <b>Esc</b>, or texting <b>"stop"/"cancel"</b> on Telegram, sets the agent's stop flag (<code>/api/chat/stop</code>) and halts a runaway turn between steps; it also kills a running Gemini turn.</p>
    <p><b>3 · Panic</b> — <code>spheria panic</code> / desktop <b>Spheria PANIC</b> / <code>POST /api/panic</code> kills server + bridge + routines + tray + Electron + Ollama and removes login autostart. The "stop absolutely everything" button.</p>`},
 
  {id:'telegram', icon:'📱', title:'Telegram — command it from your phone', html:`
@@ -284,6 +283,7 @@ const SECTIONS = [
      <li><b>Auto-pairs</b> the first chat that messages it, then ignores all others (that chat id is the password).</li>
      <li><b>Gated actions:</b> when the brain wants to do something destructive, the bridge asks you in chat; a bare <b>"yes"/"no"</b> reply arms or denies it — the model can't self-approve.</li>
      <li><b>Commands:</b> <code>/new</code> (fresh chat), <code>/status</code>, <code>/model &lt;name&gt;</code>, <code>/screenshot</code> (captures the PC, sends the photo).</li>
+     <li><b>Interrupt:</b> text <code>stop</code> / <code>cancel</code> / "forget it" while it's working and it halts the current turn between steps — even mid-task.</li>
    </ul>
    <p style="margin-top:12px"><b>It's TWO-WAY — Spheria pings YOU too:</b></p>
    <div class="flow">inbound : your phone → Telegram → getUpdates long-poll → bridge → agent.chat() → reply
@@ -306,10 +306,10 @@ outbound: Spheria → POST sendMessage(bot token + your chat id) → your phone<
    </ul>`},
 
  {id:'widget', icon:'🦁', title:'The Python widget & the unification', html:`
-   <p>The floating HUD (<code>…/SPHERIA 2.0/spheria/widget_spheria_v2.py</code>). Originally a Gemini chat + ESO agent overseer. Now <b>also a door to the local brain</b>. Backup kept at <code>widget_spheria_v2.py.bak-unify-20260612</code>; restart the widget to load changes.</p>
+   <p>The floating HUD (<code>…/SPHERIA 2.0/spheria/widget_spheria_v2.py</code>). A Gemini chat + ESO agent overseer that is <b>also a door to the local brain</b>.</p>
    <div class="kv"><b>☁ / 🦁 toggle</b><span>Next to the input. ☁ = Gemini (default, unchanged). 🦁 = local Spheria — your typing streams to <code>:8470/api/chat</code> (<code>LocalBrainThread</code>); tool calls scroll into the orb terminal.</span></div>
    <div class="kv"><b>■ STOP + Esc</b><span>Halts the local (or cloud) turn instantly. Red while working.</span></div>
-   <div class="kv"><b>Status dot</b><span>The old red "mobile server" dot now shows the <b>E-server health</b> (green = up); click it to open the control center. The old <code>:8765</code> LAN server is retired (Telegram replaced it).</span></div>
+   <div class="kv"><b>Status dot</b><span>Shows the <b>E-server health</b> (green = up); click it to open the control center.</span></div>
    <div class="kv"><b>Logo click</b><span>Single-click the lion → launches the E control center.</span></div>
    <div class="kv"><b>Orb narration</b><span><code>LocalEventsThread</code> subscribes to <code>/api/events</code> → the orb narrates phone/routine activity even when you're chatting from your phone.</span></div>
    <div class="note">Shared identity: both halves point at the <b>same credentials folder</b>, so email/cloud work with zero new sign-ins. Secrets are never read into chat — tools only ever read keys at runtime.</div>`},
@@ -334,7 +334,7 @@ outbound: Spheria → POST sendMessage(bot token + your chat id) → your phone<
        <p style="color:var(--dim);font-size:13px">Local Spheria itself keeps its full ~43-tool catalog (see Tools). Gemini-in-ESO uses ESO's function registry + agents instead.</p>
      </div></div>
    </div>
-   <div class="note">❌ <b>Declined by you:</b> making Gemini a switchable <i>brain inside</i> E. The E drive stays the local model — it just gains the ability to <i>call</i> Gemini.</div>`},
+   <div class="note">The E drive stays the <b>local</b> model — it doesn't switch its brain to Gemini; it just <i>calls</i> Gemini via <code>ask_gemini</code> when it needs heavy reasoning.</div>`},
 
  {id:'esodata', icon:'💼', title:'Your data &amp; ESO functions — the local brain knows YOU', html:`
    <p>The cloud widget could call ~180 hand-written functions over your real finance &amp; health data. The
@@ -342,8 +342,9 @@ outbound: Spheria → POST sendMessage(bot token + your chat id) → your phone<
    its prompt with every name.</p>
    <p><b>How it works — discover, then run:</b></p>
    <div class="flow">you ask a question about your own data
-   → eso_function(query="…")    → returns the FEW relevant functions (not all 180)
-   → eso_function(name="…")     → runs it in the data Python, returns the answer
+   → eso_function(query="…")     → returns the FEW relevant functions (not all 180)
+   → eso_function(name="…")      → runs one in the data Python, returns the answer
+   → eso_function(calls=[…])     → runs SEVERAL at once, in one pass, for multi-part questions
    the right data file is injected automatically; the prompt never lists the functions</div>
    <ul>
      <li><b>Finance</b> — dozens of functions over a private CSV (balances, spending, savings, trends).</li>
@@ -364,63 +365,25 @@ outbound: Spheria → POST sendMessage(bot token + your chat id) → your phone<
 
  {id:'data', icon:'🗃', title:'Data, memory & where things are saved', html:`
    <div class="kv"><b>Config</b><span><code>spheria.config.json</code> — the brain pointer + all settings + <code>integrations</code> (email, cloud, music, Gemini, ESO paths…).</span></div>
-   <div class="kv"><b>Sessions</b><span><code>home/sessions/*.json</code> — every conversation from every door, resume-able.</span></div>
+   <div class="kv"><b>Sessions</b><span><code>home/sessions/*.json</code> — every conversation from every door, resume-able. The <b>complete transcript</b> is kept; compaction only trims what the model sees, never what's saved.</span></div>
    <div class="kv"><b>Memory</b><span><code>home/memory/MEMORY.md</code> — what Spheria remembers about you across sessions (the <code>remember</code> tool appends here; injected into the system prompt). The prompt pushes it to learn your interests/habits over time.</span></div>
    <div class="kv"><b>Routines</b><span><code>home/routines.json</code> — scheduled prompts that run unattended (the scheduler checks every 20s), optionally delivered to Telegram.</span></div>
    <div class="kv"><b>Workspace</b><span><code>E:\\Spheria\\workspace</code> — Spheria's tidy playground for when no folder is given (one project subfolder per task). When you point it at a specific folder, it works THERE instead.</span></div>
    <div class="kv"><b>Secrets</b><span><code>home/secrets</code> (its own OAuth caches) + the shared ESO creds dir. Never read into chat.</span></div>
    <div class="kv"><b>Logs / screenshots / browsers</b><span><code>home/logs</code>, <code>home/screenshots</code>, <code>home/browsers</code> (Playwright Chromium).</span></div>`},
 
- {id:'files', icon:'📄', title:'What was built / changed this rebuild', html:`
-   <p><b>New files:</b></p>
-   <p>
-     <span class="pill path">src/spheria/events.py</span><span class="pill path">tools/feeds.py</span><span class="pill path">tools/mail.py</span>
-     <span class="pill path">tools/cloud.py</span><span class="pill path">tools/media.py</span><span class="pill path">tools/bridge.py</span>
-     <span class="pill path">tools/graph_auth.py</span><span class="pill path">skills/cloud-and-email.md</span>
-     <span class="pill path">docs/UNIFICATION_PLAN.md</span><span class="pill path">docs/AUDIT_PROMPT.md</span>
-     <span class="pill path">install/context_menu.reg</span><span class="pill path">Spheria mapped/ (this)</span>
-   </p>
-   <p><b>Changed:</b></p>
-   <p>
-     <span class="pill path">agent.py</span><span class="pill path">safety.py</span><span class="pill path">cli.py</span><span class="pill path">server.py</span>
-     <span class="pill path">telegram.py</span><span class="pill path">config.py</span><span class="pill path">paths.py</span><span class="pill path">tools/__init__.py</span>
-     <span class="pill path">tools/fs.py</span><span class="pill path">tools/shell.py</span><span class="pill path">tools/pyexec.py</span><span class="pill path">tools/windows.py</span>
-     <span class="pill path">tools/browser.py</span><span class="pill path">gui/index.html</span><span class="pill path">install/setup.ps1</span>
-     <span class="pill path">electron/main.js</span><span class="pill path">widget_spheria_v2.py (C:)</span>
-   </p>
-   <p style="margin-top:14px"><b>Then, the latest round:</b></p>
-   <p>
-     <span class="pill path">tools/eso.py</span><span class="pill path">quickbox.py</span><span class="pill path">assets/set_icon.py</span>
-   </p>
-   <p><b>What changed, in plain words:</b></p>
-   <ul>
-     <li>Added the <b>destructive-action gate</b> + GUI/Telegram/widget approval + <b>STOP</b> button (and Esc).</li>
-     <li>Added <b>email, RSS, OneDrive, Google Drive, Notion, generic API, music, ask_gemini, eso_agent</b> tools.</li>
-     <li>Fixed the brain (tool-capable model), <b>uncensored via prompt</b>, fixed pyexec/pip, flail guards.</li>
-     <li>Made <code>open_windows_app</code> launch <b>any installed app</b> (incl. Store apps like Claude/Codex).</li>
-     <li>The <b>folder right-click</b> quick-action — now a <b>PyQt6 glass box</b> at the cursor (matches the widget, with a dark right-click menu) → console → continue.</li>
-     <li><b>eso_function</b> — the local brain can now answer the owner's <b>finance &amp; health</b> questions from their private data (discover → run).</li>
-     <li><b>Protected paths</b> — the owner's wider system is read-only; deletes there are refused even with approval.</li>
-     <li><b>Pre-scraped data</b> awareness (headlines / trends) so it doesn't web-browse for news.</li>
-     <li>Tray <b>"Shut down Spheria"</b> = graceful quit (keeps the widget + autostart); panic is GUI-only.</li>
-     <li>One-step <b>icon swap</b> (<code>set_icon.py</code>) — new logo everywhere.</li>
-     <li>The <b>/api/events</b> firehose + widget unification (cloud/local toggle, status dot, logo, narration, STOP).</li>
-   </ul>`},
-
- {id:'test', icon:'🧪', title:'Try it / test it — and where the bugs will hide', html:`
-   <p>This is <b>ambiguous (probabilistic) computing</b>, not deterministic — you find the edges by USING it.
-   A checklist to exercise every capability and surface what's flaky:</p>
+ {id:'test', icon:'🧪', title:'Things to ask it — a quick tour', html:`
+   <p>A handful of requests that show what it can do, end to end:</p>
    <div class="kv"><b>Files / folders</b><span>Right-click a folder → "make 5 numbered text files" · "rename these 1.png, 2.png" · "summarise what's in here".</span></div>
    <div class="kv"><b>Your data</b><span>"what's my balance this month?" · "how did I sleep last week?" — should come back fast via eso_function, no web.</span></div>
    <div class="kv"><b>Apps</b><span>"open spotify" · "open claude" — should launch instantly (open_windows_app), not go hunting.</span></div>
    <div class="kv"><b>News</b><span>"what's trending?" · "top headlines" — should read the pre-scraped CSVs, not browse.</span></div>
    <div class="kv"><b>Web</b><span>"go to reddit and find me 3 things I'd like" — watch it open, scrape, curate.</span></div>
-   <div class="kv"><b>Email</b><span>"draft &amp; send an email to … about …" — it should GATE (ask before sending).</span></div>
+   <div class="kv"><b>Email</b><span>"email this to a friend" — it ASKS before sending to anyone new; mail to your own pre-approved addresses goes straight out.</span></div>
    <div class="kv"><b>Music</b><span>"play some akon" — finds + queues from your library.</span></div>
    <div class="kv"><b>Phone</b><span>Message the bot; ask it to screenshot the PC and send it back.</span></div>
-   <div class="kv"><b>Safety</b><span>"delete everything here" → must ASK first. A delete in the protected area → must REFUSE. Hit STOP mid-task → must halt.</span></div>
-   <div class="kv"><b>Both brains</b><span>Toggle ☁/🦁 in the widget; ask the same hard question to each.</span></div>
-   <div class="note">⚠️ <b>Likely soft spots</b> (watch here first): real browser control on JS-heavy sites; the 30B model's speed on long tasks; tool-call accuracy on vague requests; gated-action retries after approval. Note anything weird — that's the trial-by-elimination loop.</div>`},
+   <div class="kv"><b>Safety</b><span>"delete everything here" → it ASKS first. A delete in the protected area → it REFUSES. Hit STOP (or text "stop") mid-task → it halts.</span></div>
+   <div class="kv"><b>Both brains</b><span>Toggle ☁/🦁 in the widget; ask the same hard question to each.</span></div>`},
 ];
 
 const TOOLGROUPS = [
@@ -433,7 +396,7 @@ const TOOLGROUPS = [
  {name:'Shell & Python', icon:'⌨', tools:[
    ['run_shell','run a Windows command (destructive ones are GATED)','gate'],
    ['python_exec','persistent Python REPL — analysis, charts, COM, bulk file ops'],
-   ['pip_install','install a package into the Spheria venv']]},
+   ['pip_install','install a package into the Spheria venv · GATED (asks first)','gate']]},
  {name:'Apps & Office', icon:'🪟', tools:[
    ['open_windows_app','launch ANY installed app by name (incl. Store apps: Claude, Codex, Spotify…)'],
    ['list_apps','find the exact app name'],
@@ -447,9 +410,10 @@ const TOOLGROUPS = [
    ['browser_close','close the browser']]},
  {name:'News & data', icon:'📰', tools:[
    ['check_rss','THE news tool — RSS/Atom feeds (hackernoon, BBC, Verge…)'],
-   ['describe_table','inspect a CSV/Excel/Parquet'],['query_table','query a table']]},
+   ['describe_table','inspect a CSV/Excel/Parquet (files are cached for fast repeat queries)'],
+   ['query_table','query a table with a pandas expression — common builtins (len/sum/sorted…) work']]},
  {name:'Email', icon:'✉', tools:[
-   ['send_email','really sends from your Outlook (Graph) / SMTP · GATED','gate'],
+   ['send_email','really sends from your Outlook (Graph)/SMTP · GATED unless every recipient is pre-approved','gate'],
    ['read_emails','read your inbox']]},
  {name:'Cloud & APIs', icon:'☁', tools:[
    ['onedrive','list/upload/download your OneDrive'],
@@ -461,7 +425,7 @@ const TOOLGROUPS = [
    ['ask_gemini','ask Gemini one hard question · the only tool that leaves the PC','cloud'],
    ['eso_agent','run an ESO agent (intel/schedule/health)','cloud']]},
  {name:'Your data (ESO functions)', icon:'💼', tools:[
-   ['eso_function','the private finance & health data — discover with query=…, run by name. data_path injected; ~130 functions']]},
+   ['eso_function','the private finance & health data — discover with query=…, run by name, or run many at once with calls=[…]. data_path injected; ~130 functions']]},
  {name:'Media', icon:'🎵', tools:[
    ['play_music','play from your ~11k-track library by artist/album/song']]},
  {name:'Memory, plan, skills, notify', icon:'🧩', tools:[
